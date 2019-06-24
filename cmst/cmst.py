@@ -181,14 +181,19 @@ def geraPopulacaoInicial(instancia, Q, quantidade):
     s = geraSolucaoViavel(instancia, Q, False, False)
     solucoes.append(s)
     quantidade -= 1 
-    for i in range(0,int(quantidade/2)):
+    for i in range(0,int(quantidade*0.7)):
         s = geraSolucaoViavel(instancia, Q, False, False, True)
         if (len(s.vertices)<instancia.tamanho-1):
             print("ERRO")
         else:
             solucoes.append(s)
-        #s = geraSolucaoViavel(instancia, Q, False, True, False)
-        #solucoes.append(s)
+    for i in range(0,int(quantidade*0.1)):
+        s = geraSolucaoViavel(instancia, Q, False, True, False)
+        if (len(s.vertices)<instancia.tamanho-1):
+            print("ERRO")
+        else:
+            solucoes.append(s)
+    for i in range(0,int(quantidade*0.20)):
         s = geraSolucaoViavel(instancia, Q, True, False, False)
         if (len(s.vertices)<instancia.tamanho-1):
             print("ERRO")
@@ -202,16 +207,10 @@ def geraPopulacaoInicial(instancia, Q, quantidade):
         if s.mstTotal<minValue:
             minValue=s.mstTotal
             minI = s
-            #print ("menor valor mstTotal="+str(minValue) + " randomAll:" + str(minI.randomAll)+ " randomOnlyFirst:" + str(minI.randomOnlyFirst)+ " randomAllFirst:" + str(minI.randomAllFirst))
-        #if s.mstTotal>maxValue:
-        #    maxValue=s.mstTotal
-        #    maxI = s
-            #print ("MAIOR valor mstTotal="+str(maxValue) + " randomAll:" + str(maxI.randomAll)+ " randomOnlyFirst:" + str(maxI.randomOnlyFirst)+ " randomAllFirst:" + str(maxI.randomAllFirst))
     solucoesFinal = []
     for s in solucoes:
-        if (s.mstTotal<2*minValue):
+        if (s.mstTotal<3*minValue):
             solucoesFinal.append(s)
-
     minValue = 1000000000
     minI = -1
     maxValue = -1
@@ -222,11 +221,6 @@ def geraPopulacaoInicial(instancia, Q, quantidade):
             minI = s
             if debug:
                 print ("menor valor mstTotal="+str(minValue) + " randomAll:" + str(minI.randomAll)+ " randomOnlyFirst:" + str(minI.randomOnlyFirst)+ " randomAllFirst:" + str(minI.randomAllFirst))
-        #if s.mstTotal>maxValue:
-        #    maxValue=s.mstTotal
-        #    maxI = s
-            #print ("MAIOR valor mstTotal="+str(maxValue) + " randomAll:" + str(maxI.randomAll)+ " randomOnlyFirst:" + str(maxI.randomOnlyFirst)+ " randomAllFirst:" + str(maxI.randomAllFirst))
-
     return solucoesFinal
 
 def crossover(solucao1, solucao2, instancia):
@@ -295,10 +289,10 @@ def LS(solucao, instancia, Q):
         retorno.vertices[jEscolhido] = novoClusterJ
         retorno.LS=True
     else:
-        return solucao
+        retorno = solucao, iEscolhido, jEscolhido
     if debug:
         print ("solucao original msttotal:" + str(solucao.mstTotal) + " - nova: " + str(melhorMST))
-    return retorno
+    return retorno, iEscolhido, jEscolhido
 
 def LS2(solucao, instancia, Q):
     iEscolhido = -1
@@ -338,8 +332,11 @@ def LS2(solucao, instancia, Q):
             clusters.lista[clusterJ].peso = (solucao.lista[clusterJ].peso-instancia.pesos[j]+instancia.pesos[i])
             clusters.lista[clusterI].peso = (solucao.lista[clusterI].peso-instancia.pesos[i]+instancia.pesos[j])
 
-            #mst = calculaTotalMST(clusters.lista,instancia)
+            mst = calculaTotalMST(clusters.lista,instancia)
             clusters.mstTotal = solucao.mstTotal + clusters.lista[clusterJ].mstCusto + clusters.lista[clusterI].mstCusto - solucao.lista[clusterJ].mstCusto - solucao.lista[clusterI].mstCusto
+
+            if (mst!= clusters.mstTotal):
+                alerta=1
 
             if clusters.mstTotal<melhorMST:
                 iEscolhido = i
@@ -348,18 +345,18 @@ def LS2(solucao, instancia, Q):
                 novoClusterI = clusterJ
                 melhorClusters = clusters
     
-    if melhorClusters.mstTotal <= solucao.mstTotal:
+    if melhorClusters.mstTotal < solucao.mstTotal:
         melhorClusters.vertices = solucao.vertices.copy()
         melhorClusters.vertices[iEscolhido] = novoClusterI
         melhorClusters.vertices[jEscolhido] = novoClusterJ
         melhorClusters.LS=True
         if debug:
             print ("solucao original msttotal:" + str(solucao.mstTotal) + " - nova: " + str( melhorClusters.mstTotal ))
-        return melhorClusters
+        return melhorClusters, iEscolhido, jEscolhido
     else:
-        return solucao
+        return solucao, iEscolhido, jEscolhido
             
-def executa(quantidadeSolucoesIniciais, quantidadeGeracoes):
+def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2):
     Q=[200,400,800]
 
     instancias = l.load("data\\capmst2.txt").instances
@@ -367,21 +364,28 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes):
     s = geraSolucaoViavel(instancias["50_1"], Q[0], False, False, False)
 
     for instancia in instancias:
-        for q in range(2,len(Q)):
+        for q in range(0,len(Q)):
             print ("tamanho instancia: "+str(instancias[instancia].tamanho)+" - id "+str(instancias[instancia].id)+" - "+str(Q[q]))
-            tempo = datetime.datetime.now()
+            #tempo = datetime.datetime.now()
             solucoes = geraPopulacaoInicial(instancias[instancia], Q[q], quantidadeSolucoesIniciais)
-            print(str(datetime.datetime.now()-tempo))
+            #print(str(datetime.datetime.now()-tempo))
             print (len(solucoes))
-            print("executando a LS")
+            print("executando a LS tipo "+str(LStype))
             solucoesLS = []
             for s in solucoes:
-                #inicio = datetime.datetime.now()
-                #solucoesLS.append(LS(s, instancias[instancia], Q[q]))
-                #print(datetime.datetime.now() - inicio)
-                inicio = datetime.datetime.now()
-                solucoesLS.append(LS2(s, instancias[instancia], Q[q]))
-                print(datetime.datetime.now() - inicio)
+                if LStype==1:
+                    #inicio = datetime.datetime.now()
+                    sLS,LSi,LSj = LS(s, instancias[instancia], Q[q])
+                    solucoesLS.append(sLS)
+                    #print(datetime.datetime.now() - inicio)
+                else:
+                    #inicio = datetime.datetime.now()
+                    sLS2,LS2i,LS2j = LS2(s, instancias[instancia], Q[q])
+                    solucoesLS.append(sLS)
+                    #print(datetime.datetime.now() - inicio)
+                #if (sLS2.mstTotal!=sLS.mstTotal):
+                #    sLS2 = LS2(s, instancias[instancia], Q[q])
+                    #print(datetime.datetime.now() - inicio)
             break
         break
     minValue = 1000000000
@@ -392,7 +396,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes):
         if s.mstTotal<minValue:
             minValue=s.mstTotal
             minI = s
-    print ("SOLUCOES LS - menor valor mstTotal="+str(minValue) + " randomAll:" + str(minI.randomAll)+ " randomOnlyFirst:" + str(minI.randomOnlyFirst)+ " randomAllFirst:" + str(minI.randomAllFirst)+" LS:"+ str(minI.LS))
+    print ("SOLUCOES LS tipo "+str(LStype)+" - menor valor mstTotal="+str(minValue) + " randomAll:" + str(minI.randomAll)+ " randomOnlyFirst:" + str(minI.randomOnlyFirst)+ " randomAllFirst:" + str(minI.randomAllFirst)+" LS:"+ str(minI.LS))
     minValue = 1000000000
     minI = -1
     maxValue = -1
@@ -402,9 +406,23 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes):
             minValue=s.mstTotal
             minI = s
     print ("SOLUCOES ORIGINAIS - menor valor mstTotal="+str(minValue) + " randomAll:" + str(minI.randomAll)+ " randomOnlyFirst:" + str(minI.randomOnlyFirst)+ " randomAllFirst:" + str(minI.randomAllFirst)+" LS:"+ str(minI.LS))
+
+
+#inicio = datetime.datetime.now()
+#executa(100,1000,2)
+#print(datetime.datetime.now() - inicio)
      
 inicio = datetime.datetime.now()
-executa(1000,1000)
+executa(100,1000,1)
+print(datetime.datetime.now() - inicio)
+inicio = datetime.datetime.now()
+executa(200,1000,1)
+print(datetime.datetime.now() - inicio)
+inicio = datetime.datetime.now()
+executa(300,1000,1)
+print(datetime.datetime.now() - inicio)
+inicio = datetime.datetime.now()
+executa(500,1000,1)
 print(datetime.datetime.now() - inicio)
 
 
