@@ -105,6 +105,88 @@ def geraSolucaoViavel(instancia, restricao, randomOnlyFirst=True, randomAll=Fals
 
     return retorno
 
+def geraSolucaoViavel2(instancia, restricao):
+    # escolher o primeiro vertice aleatoriamente para cada cluster
+    # para o proximo vertice, escolher o que minimiza a distancia entre o central e o primeiro
+    # para os proximos escolher o vertice mais proximo do corte
+    # ate a capacidade
+
+    noCentral = instancia.tamanho-1
+    vertices = {}
+    retorno = clustersObject()
+    nVerticesInseridos = 0
+    for i in range(0,instancia.pesos.shape[0]):
+        vertices[i]=False
+
+    minCusto = instancia.custoMaximo()+1
+    noMaisProximo = -1
+
+    nClusters = 0
+    nVerticesInseridos = 0
+
+    while True:
+        nClusters += 1
+        retorno.lista[nClusters]=cluster()
+        retorno.lista[nClusters].peso = 0
+    
+        primeiroInserido = getRandomNode(vertices)
+        pesoVertice = instancia.pesos[primeiroInserido]
+        vertices[primeiroInserido] = True
+        retorno.lista[nClusters].nodes.append(primeiroInserido)
+        retorno.lista[nClusters].peso += pesoVertice 
+        retorno.vertices[primeiroInserido]=nClusters
+        nVerticesInseridos += 1
+
+        if (nVerticesInseridos>=noCentral):
+            break
+
+        menorDistancia = 2000000000
+        proximoVertice = -1
+        for i in range(0,noCentral):
+            if vertices[i]==False:
+                distancia = instancia.custos[i,noCentral]+instancia.custos[i,primeiroInserido]
+                if ((distancia<menorDistancia) and ((retorno.lista[nClusters].peso+instancia.pesos[i])<=restricao)):
+                    proximoVertice = i
+                    menorDistancia = distancia
+
+        pesoVertice = instancia.pesos[proximoVertice]
+        vertices[proximoVertice] = True
+        retorno.lista[nClusters].nodes.append(proximoVertice)
+        retorno.lista[nClusters].peso += pesoVertice 
+        retorno.vertices[proximoVertice]=nClusters
+        nVerticesInseridos += 1
+
+        if (nVerticesInseridos>=noCentral):
+            break
+
+        while True:
+            menorDistancia = 2000000000
+            proximoVertice = -1
+            for i in range(0,noCentral):
+                if vertices[i]==False:
+                    distancia = 0 
+                    for j in retorno.lista[nClusters].nodes:
+                       distancia += instancia.custos[i,j]
+                    if ((distancia<menorDistancia) and ((retorno.lista[nClusters].peso+instancia.pesos[i])<=restricao)):
+                        proximoVertice = i
+                        menorDistancia = distancia
+            if proximoVertice<0:
+                break
+            pesoVertice = instancia.pesos[proximoVertice]
+            vertices[proximoVertice] = True
+            retorno.lista[nClusters].nodes.append(proximoVertice)
+            retorno.lista[nClusters].peso += pesoVertice 
+            retorno.vertices[proximoVertice]=nClusters
+            nVerticesInseridos += 1
+
+        if (nVerticesInseridos>=noCentral):
+            break
+    #
+    retorno.mstTotal = calculaTotalMST(retorno.lista,instancia)
+    return retorno
+
+
+
 def prim(g,instancia):
     g = g.copy()
     noCentral = instancia.tamanho-1
@@ -148,7 +230,8 @@ def prim(g,instancia):
 def calculaTotalMST(clusters, instancia):
     mstTotal=0
     for i,c in clusters.items():
-        c.mstCusto = prim(c.nodes,instancia)
+        if c.mstCusto<=0:
+            c.mstCusto = prim(c.nodes,instancia)
         mstTotal+=c.mstCusto
     return mstTotal
 
@@ -181,22 +264,28 @@ def geraPopulacaoInicial(instancia, Q, quantidade):
     s = geraSolucaoViavel(instancia, Q, False, False)
     solucoes.append(s)
     quantidade -= 1 
-    for i in range(0,int(quantidade*0.7)):
+    for i in range(0,int(quantidade*0.3)):
+        s = geraSolucaoViavel2(instancia, Q)
+        if (len(s.vertices)<instancia.tamanho-1):
+            print("ERRO 1")
+        else:
+            solucoes.append(s)
+    for i in range(0,int(quantidade*0.4)):
         s = geraSolucaoViavel(instancia, Q, False, False, True)
         if (len(s.vertices)<instancia.tamanho-1):
-            print("ERRO")
+            print("ERRO 2")
         else:
             solucoes.append(s)
     for i in range(0,int(quantidade*0.1)):
         s = geraSolucaoViavel(instancia, Q, False, True, False)
         if (len(s.vertices)<instancia.tamanho-1):
-            print("ERRO")
+            print("ERRO 3")
         else:
             solucoes.append(s)
-    for i in range(0,int(quantidade*0.20)):
+    for i in range(0,int(quantidade*0.2)):
         s = geraSolucaoViavel(instancia, Q, True, False, False)
         if (len(s.vertices)<instancia.tamanho-1):
-            print("ERRO")
+            print("ERRO 4")
         else:
             solucoes.append(s)
     minValue = 1000000000
@@ -209,29 +298,214 @@ def geraPopulacaoInicial(instancia, Q, quantidade):
             minI = s
     solucoesFinal = []
     for s in solucoes:
-        if (s.mstTotal<3*minValue):
+        if (s.mstTotal<1.2*minValue):
             solucoesFinal.append(s)
-    minValue = 1000000000
-    minI = -1
-    maxValue = -1
-    maxI = -1
-    for s in solucoesFinal:
-        if s.mstTotal<minValue:
-            minValue=s.mstTotal
-            minI = s
-            if debug:
-                print ("menor valor mstTotal="+str(minValue) + " randomAll:" + str(minI.randomAll)+ " randomOnlyFirst:" + str(minI.randomOnlyFirst)+ " randomAllFirst:" + str(minI.randomAllFirst))
+    if debug:
+        minValue = 1000000000
+        minI = -1
+        maxValue = -1
+        maxI = -1
+        for s in solucoesFinal:
+            if s.mstTotal<minValue:
+                minValue=s.mstTotal
+                minI = s
+                if debug:
+                    print ("menor valor mstTotal="+str(minValue) + " randomAll:" + str(minI.randomAll)+ " randomOnlyFirst:" + str(minI.randomOnlyFirst)+ " randomAllFirst:" + str(minI.randomAllFirst))
     return solucoesFinal
 
-def crossover(solucao1, solucao2, instancia):
+def geraFilhos(solucao1,solucao2,instancia, restricao):
+    nova1 = clustersObject()
+    nova2 = clustersObject()
+    nClustersNova1 = 0
+    nClustersNova2 = 0
+    for i,c in solucao1.lista.items():
+        if (i%2==0):
+            nClustersNova2+=1
+            nova2.lista[nClustersNova2] = cluster()
+            nova2.lista[nClustersNova2].nodes = c.nodes.copy()
+            nova2.lista[nClustersNova2].mstCusto = c.mstCusto
+            nova2.lista[nClustersNova2].peso = c.peso
+        else:
+            nClustersNova1+=1
+            nova1.lista[nClustersNova1] = cluster()
+            nova1.lista[nClustersNova1].nodes = c.nodes.copy()
+            nova1.lista[nClustersNova1].mstCusto = c.mstCusto
+            nova1.lista[nClustersNova1].peso = c.peso
+    
+    nClustersNova1Metade = nClustersNova1
+    nClustersNova2Metade = nClustersNova2
+    nClustersNova1 = 0
+    nClustersNova2 = 0
+    for i,c in solucao2.lista.items():
+        #if (nClustersNova2>int(len(solucao2.lista)/2)):
+        if (i%2==0):
+            nClustersNova1+=1
+            nova1.lista[nClustersNova1+nClustersNova1Metade] = cluster()
+            nova1.lista[nClustersNova1+nClustersNova1Metade].nodes = c.nodes.copy()
+            nova1.lista[nClustersNova1+nClustersNova1Metade].mstCusto = c.mstCusto
+            nova1.lista[nClustersNova1+nClustersNova1Metade].peso = c.peso
+        else:
+            nClustersNova2+=1
+            nova2.lista[nClustersNova2+nClustersNova2Metade] = cluster()
+            nova2.lista[nClustersNova2+nClustersNova2Metade].nodes = c.nodes.copy()
+            nova2.lista[nClustersNova2+nClustersNova2Metade].mstCusto = c.mstCusto
+            nova2.lista[nClustersNova2+nClustersNova2Metade].peso = c.peso
+    nova1 = removeInconsistencias(nova1, instancia, restricao)
+    nova2 = removeInconsistencias(nova2, instancia, restricao)
+    return nova1, nova2
+
+def completaSolucao(instancia, restricao, solucao, vertices, randomOnlyFirst=True, randomAll=False, randomAllFirst=False):
+    nClusters = len(solucao.lista)
+    retorno = solucao
+    nVerticesInseridos = len(solucao.vertices)
+
+    linhas = instancia.pesos.shape[0]
+
+    restricaoRestante = restricao
+    minCusto = instancia.custoMaximo()+1
+    noCentral = instancia.custos.shape[1]-1
+    noMaisProximo = -1
+
+    nClusters+=1
+    clusters={}
+    clusters[nClusters]=cluster()
+    clusters[nClusters].peso = 0
+
+    if randomOnlyFirst or randomAll or randomAllFirst:
+        ultimoInserido = getRandomNode(vertices)
+        nVerticesInseridos += 1
+        pesoInstancia = instancia.pesos[ultimoInserido]
+        restricaoRestante -= pesoInstancia 
+        vertices[ultimoInserido]=True
+        clusters[nClusters].nodes.append(ultimoInserido)
+        clusters[nClusters].peso += pesoInstancia 
+    else:
+        ultimoInserido = noCentral
+    first = False
+    while nVerticesInseridos < instancia.tamanho-1:
+        menorCustoEncontrado = minCusto
+        noEscolhido = -1
+        if randomAll:
+            noEscolhido = getRandomNode(vertices)
+            menorCustoEncontrado = instancia.custos[noEscolhido,ultimoInserido]
+        elif randomAllFirst and first:
+            noEscolhido = getRandomNode(vertices)
+            menorCustoEncontrado = instancia.custos[noEscolhido,ultimoInserido]
+            first = False
+        else:
+            for i in range(linhas):
+                if (vertices[i]==False) and (i != noCentral):
+                    custoIparaUltimoInserido = instancia.custos[i,ultimoInserido]
+                    if (menorCustoEncontrado > custoIparaUltimoInserido) and (custoIparaUltimoInserido > 0):
+                        noEscolhido = i
+                        menorCustoEncontrado = custoIparaUltimoInserido
+        pesoInstancia = instancia.pesos[noEscolhido]
+        if (noEscolhido < 0):
+            break
+        if (pesoInstancia > restricaoRestante):
+            restricaoRestante = restricao
+            nClusters+=1
+            ultimoInserido = noCentral
+            clusters[nClusters]=cluster()
+            clusters[nClusters].peso = 0
+            first = True
+        else:
+            nVerticesInseridos += 1
+            restricaoRestante -= pesoInstancia 
+            vertices[noEscolhido]=True
+            clusters[nClusters].nodes.append(noEscolhido)
+            clusters[nClusters].peso += pesoInstancia 
+            ultimoInserido = noEscolhido
+    
+    for i,c in clusters.items():
+        for j in (c.nodes):
+            retorno.vertices[j]=i
+
+    for i,c in clusters.items():
+        retorno.lista[i]=c
+    retorno.mstTotal = calculaTotalMST(retorno.lista, instancia)
+    retorno.randomAll = randomAll
+    retorno.randomAllFirst = randomAllFirst
+    retorno.randomOnlyFirst = randomOnlyFirst
+    
+    if debug:
+        print(str(linhas)+" - "+str(len(retorno.vertices)))
+
+    return retorno
+
+def removeInconsistencias(s,instancia, restricao):
+    s.vertices={}
+    vertices={}
+    for i in range(0,instancia.tamanho-1):
+        vertices[i] = False
+    removerClusters = []
+    for i,c in s.lista.items():
+        for v in c.nodes:
+            if (i in s.vertices):
+                removerClusters.append(i)
+                break
+            s.vertices[v]=i
+    # caso haja repeticao de algum elemento em mais de um cluster, um deles é removido
+    for remover in removerClusters:
+        s.lista.pop(remover)
+   
+    sNova = clustersObject()
+    nclusters = 0
+
+    for i,c in s.lista.items():
+        nclusters+=1
+        sNova.lista[nclusters]=cluster()
+        sNova.lista[nclusters].peso = c.peso
+        sNova.lista[nclusters].mstCusto = c.mstCusto
+
+        for v in c.nodes:
+            sNova.lista[nclusters].nodes.append(v)
+            sNova.vertices[v]=nclusters
+            vertices[v]=True
+
+    for i in range(0,instancia.tamanho-1):
+        if (vertices[i]==False):
+            pesoVertice = instancia.pesos[i]
+            clusterMaisProximo = -1
+            clusterMaisProximoDistancia=2000000000
+            for j,c in sNova.lista.items():
+                if c.peso+pesoVertice>restricao:
+                    continue
+                for k in c.nodes:
+                    custoIK = instancia.custos[i,k]
+                    if custoIK<clusterMaisProximoDistancia:
+                        clusterMaisProximo=j
+                        clusterMaisProximoDistancia=custoIK
+            if (clusterMaisProximo>0):
+                sNova.lista[clusterMaisProximo].nodes.append(i)
+                sNova.lista[clusterMaisProximo].peso += pesoVertice
+                sNova.lista[clusterMaisProximo].mstCusto = prim(sNova.lista[clusterMaisProximo].nodes,instancia)
+                sNova.vertices[i]=clusterMaisProximo
+                vertices[i]=True
+
+    sNova = completaSolucao(instancia, restricao, sNova, vertices, False, False, False)
+    return sNova
+
+def crossover(solucao1, solucao2, instancia, restricao):
     i=0
+    nova1,nova2 = geraFilhos(solucao1,solucao2,instancia, restricao)
+    nova1,i,j=LS(nova1,instancia,restricao)
+    nova2,i,j=LS(nova2,instancia,restricao)
+    retorno={}
+    retorno[nova1.mstTotal]=nova1
+    retorno[nova2.mstTotal]=nova2
+    retorno[solucao1.mstTotal]=solucao1
+    retorno[solucao2.mstTotal]=solucao2
+
+    retornoOrderedKeys = sorted(retorno)
+    return retorno[retornoOrderedKeys[0]], retorno[retornoOrderedKeys[1]]
+
+
     ## gerar 2 solucoes filhas a partir das duas originais
     ## pegar metade dos clusters de cada e juntar
     ## havendo sobreposicao, eliminar os clusters e rodar o algoritmo de geracao de solucao inicial para clusterizar os nos livres
     ## recalcular o mstTotal e retornar as 2 solucoes novas
 
-def mutation(solucao, instancia):
-    i=0
 
 def LS(solucao, instancia, Q):
     iEscolhido = -1
@@ -360,6 +634,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2):
     Q=[200,400,800]
 
     instancias = l.load("data\\capmst2.txt").instances
+    s = geraSolucaoViavel2(instancias["50_1"], Q[0])
 
     s = geraSolucaoViavel(instancias["50_1"], Q[0], False, False, False)
 
@@ -370,8 +645,21 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2):
             solucoes = geraPopulacaoInicial(instancias[instancia], Q[q], quantidadeSolucoesIniciais)
             #print(str(datetime.datetime.now()-tempo))
             print (len(solucoes))
-            print("executando a LS tipo "+str(LStype))
+            print("executando a LS tipo " + str(LStype))
             solucoesLS = []
+            inicio = datetime.datetime.now()
+            for i in range(0,quantidadeGeracoes):
+                s1 = solucoes.pop(rd.randint(0,len(solucoes)-1))
+                s2 = solucoes.pop(rd.randint(0,len(solucoes)-1))
+
+                n1,n2 = crossover(s1,s2,instancias[instancia], Q[q])
+                solucoes.append(n1)
+                solucoes.append(n2)
+
+                if i%20 == 0:
+                    print("Geração "+str(i)+" - "+str(datetime.datetime.now()-inicio))
+            print("FIM - "+str(datetime.datetime.now()-inicio))
+
             for s in solucoes:
                 if LStype==1:
                     #inicio = datetime.datetime.now()
@@ -412,17 +700,20 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2):
 #executa(100,1000,2)
 #print(datetime.datetime.now() - inicio)
      
+#inicio = datetime.datetime.now()
+#executa(100,1000,1)
+#print(datetime.datetime.now() - inicio)
+#inicio = datetime.datetime.now()
+#executa(200,1000,1)
+#print(datetime.datetime.now() - inicio)
+#inicio = datetime.datetime.now()
+#executa(300,1000,1)
+#print(datetime.datetime.now() - inicio)
+#inicio = datetime.datetime.now()
+#executa(500,1000,1)
+#print(datetime.datetime.now() - inicio)
 inicio = datetime.datetime.now()
-executa(100,1000,1)
-print(datetime.datetime.now() - inicio)
-inicio = datetime.datetime.now()
-executa(200,1000,1)
-print(datetime.datetime.now() - inicio)
-inicio = datetime.datetime.now()
-executa(300,1000,1)
-print(datetime.datetime.now() - inicio)
-inicio = datetime.datetime.now()
-executa(500,1000,1)
+executa(1000,40,1)
 print(datetime.datetime.now() - inicio)
 
 
