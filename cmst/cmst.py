@@ -28,8 +28,8 @@ def geraSolucaoViavel(instancia, restricao, randomOnlyFirst=True, randomAll=Fals
     clusters = {}
     vertices = {}
     retorno = clustersObject()
-    nVerticesInseridos = 0
-    for i in range(0,instancia.pesos.shape[0]+1):
+
+    for i in range(0,instancia.pesos.shape[0]):
         vertices[i]=False
 
     linhas = instancia.pesos.shape[0]
@@ -52,10 +52,11 @@ def geraSolucaoViavel(instancia, restricao, randomOnlyFirst=True, randomAll=Fals
         vertices[ultimoInserido]=True
         clusters[nClusters].nodes.append(ultimoInserido)
         clusters[nClusters].peso += pesoInstancia 
+        retorno.vertices[ultimoInserido]=nClusters
     else:
         ultimoInserido = noCentral
     first = False
-    while nVerticesInseridos < instancia.tamanho-1:
+    while nVerticesInseridos < instancia.tamanho:
         menorCustoEncontrado = minCusto
         noEscolhido = -1
         if randomAll:
@@ -63,18 +64,19 @@ def geraSolucaoViavel(instancia, restricao, randomOnlyFirst=True, randomAll=Fals
             menorCustoEncontrado = instancia.custos[noEscolhido,ultimoInserido]
         elif randomAllFirst and first:
             noEscolhido = getRandomNode(vertices)
-            menorCustoEncontrado = instancia.custos[noEscolhido,ultimoInserido]
+            #menorCustoEncontrado = instancia.custos[noEscolhido,ultimoInserido]
             first = False
         else:
             for i in range(linhas):
                 if (vertices[i]==False) and (i != noCentral):
                     custoIparaUltimoInserido = instancia.custos[i,ultimoInserido]
-                    if (menorCustoEncontrado > custoIparaUltimoInserido) and (custoIparaUltimoInserido > 0):
+                    if (menorCustoEncontrado > custoIparaUltimoInserido) and (custoIparaUltimoInserido >= 0):
                         noEscolhido = i
                         menorCustoEncontrado = custoIparaUltimoInserido
-        pesoInstancia = instancia.pesos[noEscolhido]
-        if (noEscolhido < 0):
+        if ((noEscolhido == None) or (noEscolhido < 0)):
             break
+
+        pesoInstancia = instancia.pesos[noEscolhido]
         if (pesoInstancia > restricaoRestante):
             restricaoRestante = restricao
             nClusters+=1
@@ -89,21 +91,30 @@ def geraSolucaoViavel(instancia, restricao, randomOnlyFirst=True, randomAll=Fals
             clusters[nClusters].nodes.append(noEscolhido)
             clusters[nClusters].peso += pesoInstancia 
             ultimoInserido = noEscolhido
-    
-    for i,c in clusters.items():
-        for j in (c.nodes):
-            retorno.vertices[j]=i
+            retorno.vertices[noEscolhido]=nClusters
+        #if contaNosInseridos(clusters)!=nVerticesInseridos:
+        #    stop=1
+
+    #for i,c in clusters.items():
+    #    for j in (c.nodes):
+    #        retorno.vertices[j]=i
 
     retorno.lista=clusters
     retorno.mstTotal = calculaTotalMST(clusters,instancia)
     retorno.randomAll = randomAll
     retorno.randomAllFirst = randomAllFirst
     retorno.randomOnlyFirst = randomOnlyFirst
-    
+
     if debug:
         print(str(linhas)+" - "+str(len(retorno.vertices)))
 
     return retorno
+
+def contaNosInseridos(clusters):
+    contador = 0
+    for i,c in clusters.items():
+        contador+= len(c.nodes)
+    return contador
 
 def geraSolucaoViavel2(instancia, restricao):
     # escolher o primeiro vertice aleatoriamente para cada cluster
@@ -111,16 +122,15 @@ def geraSolucaoViavel2(instancia, restricao):
     # para os proximos escolher o vertice mais proximo do corte
     # ate a capacidade
 
-    noCentral = instancia.tamanho-1
     vertices = {}
     retorno = clustersObject()
-    nVerticesInseridos = 0
     for i in range(0,instancia.pesos.shape[0]):
         vertices[i]=False
 
     minCusto = instancia.custoMaximo()+1
     noMaisProximo = -1
 
+    noCentral = instancia.tamanho-1
     nClusters = 0
     nVerticesInseridos = 0
 
@@ -184,8 +194,6 @@ def geraSolucaoViavel2(instancia, restricao):
     #
     retorno.mstTotal = calculaTotalMST(retorno.lista,instancia)
     return retorno
-
-
 
 def prim(g,instancia):
     g = g.copy()
@@ -258,22 +266,21 @@ def getRandomNode(vertices):
     for i,v in vertices.items():
         if v==False:
             return i
+    return -1
 
 def geraPopulacaoInicial(instancia, Q, quantidade):
     solucoes = []
     s = geraSolucaoViavel(instancia, Q, False, False)
     solucoes.append(s)
     quantidade -= 1 
-    for i in range(0,int(quantidade*0.3)):
-        s = geraSolucaoViavel2(instancia, Q)
-        if (len(s.vertices)<instancia.tamanho-1):
-            print("ERRO 1")
-        else:
-            solucoes.append(s)
+    contador=0
     for i in range(0,int(quantidade*0.4)):
+        contador+=1
+        if (contador==106):
+            stop=1
         s = geraSolucaoViavel(instancia, Q, False, False, True)
         if (len(s.vertices)<instancia.tamanho-1):
-            print("ERRO 2")
+            print("ERRO 2 - "+str(contador))
         else:
             solucoes.append(s)
     for i in range(0,int(quantidade*0.1)):
@@ -286,6 +293,12 @@ def geraPopulacaoInicial(instancia, Q, quantidade):
         s = geraSolucaoViavel(instancia, Q, True, False, False)
         if (len(s.vertices)<instancia.tamanho-1):
             print("ERRO 4")
+        else:
+            solucoes.append(s)
+    for i in range(0,int(quantidade*0.3)):
+        s = geraSolucaoViavel2(instancia, Q)
+        if (len(s.vertices)<instancia.tamanho-1):
+            print("ERRO 1")
         else:
             solucoes.append(s)
     minValue = 1000000000
@@ -396,7 +409,7 @@ def completaSolucao(instancia, restricao, solucao, vertices, randomOnlyFirst=Tru
             for i in range(linhas):
                 if (vertices[i]==False) and (i != noCentral):
                     custoIparaUltimoInserido = instancia.custos[i,ultimoInserido]
-                    if (menorCustoEncontrado > custoIparaUltimoInserido) and (custoIparaUltimoInserido > 0):
+                    if (menorCustoEncontrado > custoIparaUltimoInserido) and (custoIparaUltimoInserido >= 0):
                         noEscolhido = i
                         menorCustoEncontrado = custoIparaUltimoInserido
         pesoInstancia = instancia.pesos[noEscolhido]
