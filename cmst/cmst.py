@@ -124,7 +124,7 @@ def geraSolucaoViavel2(instancia, restricao):
 
     vertices = {}
     retorno = clustersObject()
-    for i in range(0,instancia.pesos.shape[0]):
+    for i in range(0,instancia.tamanho):
         vertices[i]=False
 
     minCusto = instancia.custoMaximo()+1
@@ -276,8 +276,8 @@ def geraPopulacaoInicial(instancia, Q, quantidade):
     contador=0
     for i in range(0,int(quantidade*0.4)):
         contador+=1
-        if (contador==106):
-            stop=1
+       
+
         s = geraSolucaoViavel(instancia, Q, False, False, True)
         if (len(s.vertices)<instancia.tamanho-1):
             print("ERRO 2 - "+str(contador))
@@ -645,43 +645,52 @@ def LS2(solucao, instancia, Q):
             
 def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2):
     Q=[200,400,800]
+    Q=[5]
 
-    instancias = l.load("data\\capmst2.txt").instances
-    s = geraSolucaoViavel2(instancias["50_1"], Q[0])
+    instancias = l.load("tcte","data\\capmst1.txt").instances
+    s = geraSolucaoViavel2(instancias["tc80_2"], Q[0])
 
-    s = geraSolucaoViavel(instancias["50_1"], Q[0], False, False, False)
+    s = geraSolucaoViavel(instancias["tc80_2"], Q[0], False, False, False)
 
     for instancia in instancias:
+        if instancia != "tc80_2":
+            continue
+        inst = instancias[instancia]
+        #inst = instancias[instancia]
         for q in range(0,len(Q)):
-            print ("tamanho instancia: "+str(instancias[instancia].tamanho)+" - id "+str(instancias[instancia].id)+" - "+str(Q[q]))
+            print (instancia+" tamanho instancia: "+str(inst.tamanho)+" - id "+str(instancias[instancia].id)+" - "+str(Q[q]))
             #tempo = datetime.datetime.now()
-            solucoes = geraPopulacaoInicial(instancias[instancia], Q[q], quantidadeSolucoesIniciais)
+            solucoes = geraPopulacaoInicial(inst, Q[q], quantidadeSolucoesIniciais)
             #print(str(datetime.datetime.now()-tempo))
             print (len(solucoes))
             print("executando a LS tipo " + str(LStype))
             solucoesLS = []
             inicio = datetime.datetime.now()
+            melhor = 2000000000
             for i in range(0,quantidadeGeracoes):
                 s1 = solucoes.pop(rd.randint(0,len(solucoes)-1))
                 s2 = solucoes.pop(rd.randint(0,len(solucoes)-1))
 
-                n1,n2 = crossover(s1,s2,instancias[instancia], Q[q])
+                n1,n2 = crossover(s1,s2,inst, Q[q])
                 solucoes.append(n1)
                 solucoes.append(n2)
 
-                if i%20 == 0:
-                    print("Geração "+str(i)+" - "+str(datetime.datetime.now()-inicio))
+                if melhor>n1.mstTotal:
+                    melhor=n1.mstTotal
+
+                if i%10 == 0:
+                    print("Geração "+str(i)+" melhor até geracao: "+ str(melhor) +" - "+str(datetime.datetime.now()-inicio))
             print("FIM - "+str(datetime.datetime.now()-inicio))
 
             for s in solucoes:
                 if LStype==1:
                     #inicio = datetime.datetime.now()
-                    sLS,LSi,LSj = LS(s, instancias[instancia], Q[q])
+                    sLS,LSi,LSj = LS(s, inst, Q[q])
                     solucoesLS.append(sLS)
                     #print(datetime.datetime.now() - inicio)
                 else:
                     #inicio = datetime.datetime.now()
-                    sLS2,LS2i,LS2j = LS2(s, instancias[instancia], Q[q])
+                    sLS2,LS2i,LS2j = LS2(s, inst, Q[q])
                     solucoesLS.append(sLS)
                     #print(datetime.datetime.now() - inicio)
                 #if (sLS2.mstTotal!=sLS.mstTotal):
@@ -726,8 +735,9 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2):
 #executa(500,1000,1)
 #print(datetime.datetime.now() - inicio)
 inicio = datetime.datetime.now()
-executa(1000,40,1)
+executa(1000,1000,1)
 print(datetime.datetime.now() - inicio)
+#instancias = l.load("tcte","data\\capmst1.txt").instances
 
 
 
