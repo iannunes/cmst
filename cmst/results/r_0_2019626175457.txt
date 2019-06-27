@@ -1,0 +1,2 @@
+tc40_1 tamanho instancia: 41 - id 1 - 10
+melhor solucao populacao incial: 506
