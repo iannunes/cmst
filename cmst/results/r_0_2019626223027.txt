@@ -1,4 +1,0 @@
-te80_5 tamanho instancia: 81 - id 5 - 10
-melhor solucao populacao incial: 1745
-melhor solucao GA: 1720
-tempo total - 0:57:37.971315

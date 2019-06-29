@@ -1,0 +1,40 @@
+tc80_1 tamanho instancia: 81 - id 1 - 20
+melhor solucao populacao incial: 960
+melhor solucao GA: 937
+FIM - 0:00:09.687124
+tc80_2 tamanho instancia: 81 - id 2 - 20
+melhor solucao populacao incial: 894
+melhor solucao GA: 868
+FIM - 0:00:09.999612
+tc80_3 tamanho instancia: 81 - id 3 - 20
+melhor solucao populacao incial: 894
+melhor solucao GA: 878
+FIM - 0:00:09.796496
+tc80_4 tamanho instancia: 81 - id 4 - 20
+melhor solucao populacao incial: 892
+melhor solucao GA: 867
+FIM - 0:00:09.562129
+tc80_5 tamanho instancia: 81 - id 5 - 20
+melhor solucao populacao incial: 1023
+melhor solucao GA: 1001
+FIM - 0:00:09.874620
+te80_1 tamanho instancia: 81 - id 1 - 20
+melhor solucao populacao incial: 1430
+melhor solucao GA: 1392
+FIM - 0:00:10.827704
+te80_2 tamanho instancia: 81 - id 2 - 20
+melhor solucao populacao incial: 1314
+melhor solucao GA: 1289
+FIM - 0:00:10.671462
+te80_3 tamanho instancia: 81 - id 3 - 20
+melhor solucao populacao incial: 1423
+melhor solucao GA: 1397
+FIM - 0:00:10.640212
+te80_4 tamanho instancia: 81 - id 4 - 20
+melhor solucao populacao incial: 1405
+melhor solucao GA: 1390
+FIM - 0:00:10.187104
+te80_5 tamanho instancia: 81 - id 5 - 20
+melhor solucao populacao incial: 1328
+melhor solucao GA: 1307
+FIM - 0:00:10.624589

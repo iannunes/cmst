@@ -3,7 +3,7 @@ import random as rd
 import datetime
 
 debug=False
-rd.seed(1)
+
 
 class cluster:
     def __init__(self):
@@ -334,43 +334,90 @@ def geraPopulacaoInicial(instancia, Q, quantidade):
                     print ("menor valor mstTotal="+str(minValue) + " randomAll:" + str(minI.randomAll)+ " randomOnlyFirst:" + str(minI.randomOnlyFirst)+ " randomAllFirst:" + str(minI.randomAllFirst))
     return solucoesFinal
 
-def geraFilhos(solucao1,solucao2,instancia, restricao):
+def geraFilhos(solucao1,solucao2,instancia, restricao, estrategia=1):
     nova1 = clustersObject()
     nova2 = clustersObject()
-    nClustersNova1 = 0
-    nClustersNova2 = 0
-    for i,c in solucao1.lista.items():
-        if (i%2==0):
-            nClustersNova2+=1
-            nova2.lista[nClustersNova2] = cluster()
-            nova2.lista[nClustersNova2].nodes = c.nodes.copy()
-            nova2.lista[nClustersNova2].mstCusto = c.mstCusto
-            nova2.lista[nClustersNova2].peso = c.peso
-        else:
-            nClustersNova1+=1
-            nova1.lista[nClustersNova1] = cluster()
-            nova1.lista[nClustersNova1].nodes = c.nodes.copy()
-            nova1.lista[nClustersNova1].mstCusto = c.mstCusto
-            nova1.lista[nClustersNova1].peso = c.peso
+    if estrategia==1:
+        nClustersNova1 = 0
+        nClustersNova2 = 0
+        for i,c in solucao1.lista.items():
+            if (i%2==0):
+                nClustersNova2+=1
+                nova2.lista[nClustersNova2] = cluster()
+                nova2.lista[nClustersNova2].nodes = c.nodes.copy()
+                nova2.lista[nClustersNova2].mstCusto = c.mstCusto
+                nova2.lista[nClustersNova2].peso = c.peso
+            else:
+                nClustersNova1+=1
+                nova1.lista[nClustersNova1] = cluster()
+                nova1.lista[nClustersNova1].nodes = c.nodes.copy()
+                nova1.lista[nClustersNova1].mstCusto = c.mstCusto
+                nova1.lista[nClustersNova1].peso = c.peso
     
-    nClustersNova1Metade = nClustersNova1
-    nClustersNova2Metade = nClustersNova2
-    nClustersNova1 = 0
-    nClustersNova2 = 0
-    for i,c in solucao2.lista.items():
-        #if (nClustersNova2>int(len(solucao2.lista)/2)):
-        if (i%2==0):
-            nClustersNova1+=1
-            nova1.lista[nClustersNova1+nClustersNova1Metade] = cluster()
-            nova1.lista[nClustersNova1+nClustersNova1Metade].nodes = c.nodes.copy()
-            nova1.lista[nClustersNova1+nClustersNova1Metade].mstCusto = c.mstCusto
-            nova1.lista[nClustersNova1+nClustersNova1Metade].peso = c.peso
-        else:
-            nClustersNova2+=1
-            nova2.lista[nClustersNova2+nClustersNova2Metade] = cluster()
-            nova2.lista[nClustersNova2+nClustersNova2Metade].nodes = c.nodes.copy()
-            nova2.lista[nClustersNova2+nClustersNova2Metade].mstCusto = c.mstCusto
-            nova2.lista[nClustersNova2+nClustersNova2Metade].peso = c.peso
+        nClustersNova1Metade = nClustersNova1
+        nClustersNova2Metade = nClustersNova2
+        nClustersNova1 = 0
+        nClustersNova2 = 0
+        for i,c in solucao2.lista.items():
+            #if (nClustersNova2>int(len(solucao2.lista)/2)):
+            if (i%2==0):
+                nClustersNova1+=1
+                nova1.lista[nClustersNova1+nClustersNova1Metade] = cluster()
+                nova1.lista[nClustersNova1+nClustersNova1Metade].nodes = c.nodes.copy()
+                nova1.lista[nClustersNova1+nClustersNova1Metade].mstCusto = c.mstCusto
+                nova1.lista[nClustersNova1+nClustersNova1Metade].peso = c.peso
+            else:
+                nClustersNova2+=1
+                nova2.lista[nClustersNova2+nClustersNova2Metade] = cluster()
+                nova2.lista[nClustersNova2+nClustersNova2Metade].nodes = c.nodes.copy()
+                nova2.lista[nClustersNova2+nClustersNova2Metade].mstCusto = c.mstCusto
+                nova2.lista[nClustersNova2+nClustersNova2Metade].peso = c.peso
+    elif estrategia==2:
+        corte1 = rd.randint(0,len(solucao1.lista))
+        corte2 = rd.randint(0,len(solucao1.lista))
+        if corte1>corte2:
+            temp=corte2
+            corte2=corte1
+            corte1=temp
+        nClustersNova1 = 0
+        nClustersNova2 = 0
+        for i,c in solucao1.lista.items():    
+            if i>=corte1 and i<corte2:
+                nClustersNova2+=1
+                nova2.lista[nClustersNova2] = cluster()
+                nova2.lista[nClustersNova2].nodes = c.nodes.copy()
+                nova2.lista[nClustersNova2].mstCusto = c.mstCusto
+                nova2.lista[nClustersNova2].peso = c.peso
+            else:
+                nClustersNova1+=1
+                nova1.lista[nClustersNova1] = cluster()
+                nova1.lista[nClustersNova1].nodes = c.nodes.copy()
+                nova1.lista[nClustersNova1].mstCusto = c.mstCusto
+                nova1.lista[nClustersNova1].peso = c.peso
+        corte1 = rd.randint(0,len(solucao1.lista))
+        corte2 = rd.randint(0,len(solucao1.lista))
+        if corte1>corte2:
+            temp=corte2
+            corte2=corte1
+            corte1=temp
+        nClustersNova1Metade = nClustersNova1
+        nClustersNova2Metade = nClustersNova2
+        nClustersNova1 = 0
+        nClustersNova2 = 0
+        for i,c in solucao2.lista.items():    
+            if i>=corte1 and i<corte2:
+                nClustersNova1+=1
+                nova1.lista[nClustersNova2] = cluster()
+                nova1.lista[nClustersNova2].nodes = c.nodes.copy()
+                nova1.lista[nClustersNova2].mstCusto = c.mstCusto
+                nova1.lista[nClustersNova2].peso = c.peso
+            else:
+                nClustersNova2+=1
+                nova2.lista[nClustersNova1] = cluster()
+                nova2.lista[nClustersNova1].nodes = c.nodes.copy()
+                nova2.lista[nClustersNova1].mstCusto = c.mstCusto
+                nova2.lista[nClustersNova1].peso = c.peso
+
     nova1 = removeInconsistencias(nova1, instancia, restricao)
     nova2 = removeInconsistencias(nova2, instancia, restricao)
     return nova1, nova2
@@ -463,8 +510,9 @@ def removeInconsistencias(s,instancia, restricao):
     for i,c in s.lista.items():
         for v in c.nodes:
             if (i in s.vertices):
-                removerClusters.append(i)
-                break
+                if (i not in removerClusters) and (s.vertices[i] not in removerClusters):
+                    removerClusters.append(i)
+                    break
             s.vertices[v]=i
     # caso haja repeticao de algum elemento em mais de um cluster, um deles é removido
     for remover in removerClusters:
@@ -507,11 +555,15 @@ def removeInconsistencias(s,instancia, restricao):
     sNova = completaSolucao(instancia, restricao, sNova, vertices, False, False, False)
     return sNova
 
-def crossover(solucao1, solucao2, instancia, restricao):
+def crossover(solucao1, solucao2, instancia, restricao, estrategia, tipoLS):
     i=0
-    nova1,nova2 = geraFilhos(solucao1,solucao2,instancia, restricao)
-    nova1,i,j=LS(nova1,instancia,restricao)
-    nova2,i,j=LS(nova2,instancia,restricao)
+    nova1,nova2 = geraFilhos(solucao1,solucao2,instancia, restricao, estrategia)
+    if tipoLS==1:
+        nova1,i,j=LS(nova1,instancia,restricao)
+        nova2,i,j=LS(nova2,instancia,restricao)
+    else:
+        nova1,i,j=LS2(nova1,instancia,restricao)
+        nova2,i,j=LS2(nova2,instancia,restricao)
     retorno={}
     retorno[nova1.mstTotal]=nova1
     retorno[nova2.mstTotal]=nova2
@@ -653,26 +705,31 @@ def LS2(solucao, instancia, Q):
         return melhorClusters, iEscolhido, jEscolhido
     else:
         return solucao, iEscolhido, jEscolhido
-            
-def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2):
+from pathlib import Path
+def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia_crossover=2, seeds=[1,2,3,4,5]):
     Q=[200,400,800]
-    Q=[20]
+    Q=[5,10,20]
 
     instancias = l.load("tcte","data\\capmst1.txt").instances
-    #s = geraSolucaoViavel2(instancias["tc80_2"], Q[0])
-
-    #s = geraSolucaoViavel(instancias["tc80_2"], Q[0], False, False, False)
     datahora_arquivos = datetime.datetime.now()
     datahora_arquivos = str(datahora_arquivos.year)+str(datahora_arquivos.month)+str(datahora_arquivos.day)+str(datahora_arquivos.hour)+str(datahora_arquivos.minute)+str(datahora_arquivos.second)
-    for instancia in instancias:
-        #if instancia != "tc80_2":
-        #    continue
-        inst = instancias[instancia]
-        #inst = instancias[instancia]
-        for q in range(0,len(Q)):
-            with open("results\\r_"+str(q)+"_"+str(datahora_arquivos)+".txt", "w") as results_file:
-                results_file.flush()
-                results_file.writelines([instancia+" tamanho instancia: "+str(inst.tamanho)+" - id "+str(instancias[instancia].id)+" - "+str(Q[q]),"\n"])
+
+    results_path = "results\\"+str(datahora_arquivos)+".csv"
+    path_instance = Path(results_path)
+    if path_instance.is_file()==False:
+        with open(results_path, "a") as results_file:
+            results_write=["instancia;tamanho;id;restricao;melhor incial;melhor GA;seed;crossover;LS;tempo\n"]
+            results_file.writelines(results_write)
+
+    for seed in seeds:
+        rd.seed(seed)
+        for instancia in instancias:
+            #if instancia != "tc80_2":
+            #    continue
+            if instancia.find("80")<0:
+                continue
+            inst = instancias[instancia]
+            for q in range(0,len(Q)):                
                 print (instancia+" tamanho instancia: "+str(inst.tamanho)+" - id "+str(instancias[instancia].id)+" - "+str(Q[q]))
 
                 inicio = datetime.datetime.now()
@@ -682,7 +739,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2):
                     if s.mstTotal<melhorSolucao.mstTotal:
                         melhorSolucao.mstTotal = s.mstTotal
                 
-                results_file.writelines(["melhor solucao populacao incial: "+str(melhorSolucao.mstTotal),"\n"])
+                melhorInicial = str(melhorSolucao.mstTotal)
 
                 solucoesLS = []
                 
@@ -690,7 +747,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2):
                     s1 = solucoes.pop(rd.randint(0,len(solucoes)-1))
                     s2 = solucoes.pop(rd.randint(0,len(solucoes)-1))
 
-                    n1,n2 = crossover(s1,s2,inst, Q[q])
+                    n1,n2 = crossover(s1,s2,inst, Q[q], estrategia_crossover, LStype)
                     solucoes.append(n1)
                     solucoes.append(n2)
 
@@ -701,47 +758,18 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2):
 
                     if i%20 == 0:
                         print("Geração "+str(i)+" melhor até geracao: "+ str(melhorSolucao.mstTotal) +" - "+str(datetime.datetime.now()-inicio))
-                
-                melhorSolucao,i,j = LS2(melhorSolucao,inst,Q[q])
+
+                if LStype==2:
+                    melhorSolucao,i,j = LS2(melhorSolucao,inst,Q[q])
+                else:
+                    melhorSolucao,i,j = LS(melhorSolucao,inst,Q[q])
+
                 solucoes.append(melhorSolucao)
                 print("FIM - "+str(datetime.datetime.now()-inicio))
-                results_file.writelines(["melhor solucao GA: " + str(melhorSolucao.mstTotal),"\n"])
-                results_file.writelines(["tempo total - "+str(datetime.datetime.now()-inicio),"\n"])
-                results_file.flush()
 
-                #for s in solucoes:
-                #    if LStype==1:
-                #        #inicio = datetime.datetime.now()
-                #        sLS,LSi,LSj = LS(s, inst, Q[q])
-                #        solucoesLS.append(sLS)
-                #        #print(datetime.datetime.now() - inicio)
-                #    else:
-                #        #inicio = datetime.datetime.now()
-                #        sLS2,LS2i,LS2j = LS2(s, inst, Q[q])
-                #        solucoesLS.append(sLS)
-                #        #print(datetime.datetime.now() - inicio)
-                #    #if (sLS2.mstTotal!=sLS.mstTotal):
-                #    #    sLS2 = LS2(s, instancias[instancia], Q[q])
-                #        #print(datetime.datetime.now() - inicio)
-    minValue = 1000000000
-    minI = -1
-    maxValue = -1
-    maxI = -1
-    for s in solucoesLS:
-        if s.mstTotal<minValue:
-            minValue=s.mstTotal
-            minI = s
-    print ("SOLUCOES LS tipo "+str(LStype)+" - menor valor mstTotal="+str(minValue) + " randomAll:" + str(minI.randomAll)+ " randomOnlyFirst:" + str(minI.randomOnlyFirst)+ " randomAllFirst:" + str(minI.randomAllFirst)+" LS:"+ str(minI.LS))
-    minValue = 1000000000
-    minI = -1
-    maxValue = -1
-    maxI = -1
-    for s in solucoes:
-        if s.mstTotal<minValue:
-            minValue=s.mstTotal
-            minI = s
-    print ("SOLUCOES ORIGINAIS - menor valor mstTotal="+str(minValue) + " randomAll:" + str(minI.randomAll)+ " randomOnlyFirst:" + str(minI.randomOnlyFirst)+ " randomAllFirst:" + str(minI.randomAllFirst)+" LS:"+ str(minI.LS))
-
+                with open(results_path, "a") as results_file:
+                    results_write=[instancia+";"+str(inst.tamanho)+";"+str(instancias[instancia].id)+";"+str(Q[q])+";"+melhorInicial+";"+str(melhorSolucao.mstTotal)+";"+str(seed)+";"+str(estrategia_crossover)+";"+str(LStype)+";"+str(datetime.datetime.now()-inicio)+"\n"]
+                    results_file.writelines(results_write)
 
 #inicio = datetime.datetime.now()
 #executa(100,1000,2)
@@ -760,7 +788,15 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2):
 #executa(500,1000,1)
 #print(datetime.datetime.now() - inicio)
 inicio = datetime.datetime.now()
-executa(1000,500,1)
+#executa(250,250,1,2,[1,2,3])
+#executa(250,250,1,1,[1,2])
+#executa(250,250,2,1,[1,2,3,4,5])
+#executa(250,250,2,2,[1,2,3,4,5])
+
+#executa(250,250,1,2,[3,4,5])
+#executa(250,250,1,1,[3,4,5])
+#executa(250,250,2,1,[1,2,3,4,5])
+executa(250,250,2,2,[1,2,3,4,5])
 print(datetime.datetime.now() - inicio)
 #instancias = l.load("tcte","data\\capmst1.txt").instances
 
