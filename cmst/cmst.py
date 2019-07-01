@@ -271,7 +271,7 @@ def getRandomNode(vertices):
     return -1
 
 def geraPopulacaoInicial(instancia, Q, quantidade):
-    q=quantidade*3
+    q=quantidade
     solucoes = {}
     s = geraSolucaoViavel(instancia, Q, False, False)
     #solucoes.append(s)
@@ -317,7 +317,7 @@ def geraPopulacaoInicial(instancia, Q, quantidade):
             minI = s
     solucoesFinal = []
     for i,s in solucoes.items():
-        if (s.mstTotal<1.2*minValue):
+        if (s.mstTotal<2*minValue):
             solucoesFinal.append(s)
             if len(solucoesFinal)>=quantidade:
                 return solucoesFinal
@@ -720,7 +720,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
         with open(results_path, "a") as results_file:
             results_write=["instancia;tamanho;id;restricao;melhor incial;melhor GA;seed;crossover;LS;tempo\n"]
             results_file.writelines(results_write)
-
+    tempolimite = 1200
     for seed in seeds:
         rd.seed(seed)
         for instancia in instancias:
@@ -729,7 +729,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
             if instancia.find("80")<0:
                 continue
             inst = instancias[instancia]
-            for q in range(0,len(Q)):                
+            for q in range(0,len(Q)):      
                 print (instancia+" tamanho instancia: "+str(inst.tamanho)+" - id "+str(instancias[instancia].id)+" - "+str(Q[q]))
 
                 inicio = datetime.datetime.now()
@@ -744,6 +744,9 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                 solucoesLS = []
                 
                 for i in range(0,quantidadeGeracoes):
+                    if (datetime.datetime.now()-inicio).seconds>tempolimite:
+                        break
+
                     s1 = solucoes.pop(rd.randint(0,len(solucoes)-1))
                     s2 = solucoes.pop(rd.randint(0,len(solucoes)-1))
 
@@ -788,15 +791,17 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
 #executa(500,1000,1)
 #print(datetime.datetime.now() - inicio)
 inicio = datetime.datetime.now()
-#executa(250,250,1,2,[1,2,3])
-#executa(250,250,1,1,[1,2])
+#executa(250,250,1,2,[1,2,3,4,5])
+#executa(250,250,1,1,[1,2,3,4,5])
 #executa(250,250,2,1,[1,2,3,4,5])
-#executa(250,250,2,2,[1,2,3,4,5])
+#executa(250,250,2,2,[3,4])
+#executa(250,250,2,2,[1,2])
+executa(250,250,2,2,[5])
 
 #executa(250,250,1,2,[3,4,5])
 #executa(250,250,1,1,[3,4,5])
 #executa(250,250,2,1,[1,2,3,4,5])
-executa(250,250,2,2,[1,2,3,4,5])
+#executa(250,250,2,2,[1,2,3,4,5])
 print(datetime.datetime.now() - inicio)
 #instancias = l.load("tcte","data\\capmst1.txt").instances
 
