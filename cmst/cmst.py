@@ -271,7 +271,9 @@ def getRandomNode(vertices):
     return -1
 
 def geraPopulacaoInicial(instancia, Q, quantidade):
-    q=quantidade
+    if quantidade==1:
+        return [geraSolucaoViavel(instancia, Q, False, False, True)]
+    q=quantidade*3
     solucoes = {}
     s = geraSolucaoViavel(instancia, Q, False, False)
     #solucoes.append(s)
@@ -572,8 +574,8 @@ def crossover(solucao1, solucao2, instancia, restricao, estrategia, tipoLS):
 
     retornoOrderedKeys = sorted(retorno)
     if len(retornoOrderedKeys)<2:
-        return retorno[retornoOrderedKeys[0]],retorno[retornoOrderedKeys[0]]
-    return retorno[retornoOrderedKeys[0]], retorno[retornoOrderedKeys[1]]
+        return retorno[retornoOrderedKeys[0]],None, 1
+    return retorno[retornoOrderedKeys[0]], retorno[retornoOrderedKeys[1]], 2
 
 
     ## gerar 2 solucoes filhas a partir das duas originais
@@ -720,13 +722,13 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
         with open(results_path, "a") as results_file:
             results_write=["instancia;tamanho;id;restricao;melhor incial;melhor GA;seed;crossover;LS;tempo\n"]
             results_file.writelines(results_write)
-    tempolimite = 1200
+    tempolimite = 600
     for seed in seeds:
         rd.seed(seed)
         for instancia in instancias:
             #if instancia != "tc80_2":
             #    continue
-            if instancia.find("80")<0:
+            if instancia.find("te80")<0:
                 continue
             inst = instancias[instancia]
             for q in range(0,len(Q)):      
@@ -742,26 +744,59 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                 melhorInicial = str(melhorSolucao.mstTotal)
 
                 solucoesLS = []
+                for s in solucoes:
+                    if LStype==2:
+                        ns,i,j = LS2(s,inst,Q[q])
+                    else:
+                        ns,i,j = LS(s,inst,Q[q])
+                    solucoesLS.append(ns)
+
+                solucoes = solucoesLS
                 
                 for i in range(0,quantidadeGeracoes):
                     if (datetime.datetime.now()-inicio).seconds>tempolimite:
                         break
+                    novaGeracao=[]
+                    for j in range(0,len(solucoes)-1,2):
+                        if (datetime.datetime.now()-inicio).seconds>tempolimite:
+                            break
+                        s1 = solucoes[j]
+                        s2 = solucoes[j+1]
+                        n1,n2, qtd = crossover(s1,s2,inst, Q[q], estrategia_crossover, LStype)
+                        if qtd==1:
+                            n2 = geraPopulacaoInicial(inst, Q[q], 1)[0]
+                        novaGeracao.append(n1)
+                        novaGeracao.append(n2)
 
-                    s1 = solucoes.pop(rd.randint(0,len(solucoes)-1))
-                    s2 = solucoes.pop(rd.randint(0,len(solucoes)-1))
+                        if melhorSolucao.mstTotal>n1.mstTotal:
+                            melhorSolucao=n1
+                            print("Geração "+str(i)+" melhor até geracao: "+ str(melhorSolucao.mstTotal) +" - "+str(datetime.datetime.now()-inicio)+" em "+str(len(solucoes))+" solucoes")
+                        if melhorSolucao.mstTotal>n2.mstTotal:
+                            melhorSolucao=n2
+                            print("Geração "+str(i)+" melhor até geracao: "+ str(melhorSolucao.mstTotal) +" - "+str(datetime.datetime.now()-inicio)+" em "+str(len(solucoes))+" solucoes")
+                            
+                    novaGeracao.sort(key=lambda x: x.mstTotal, reverse=True)
+                    
+                    novaGeracao.pop(0)
+                    novaGeracao.pop(0)
+                    
+                    solucoes = []
+                    solucoes.append(geraPopulacaoInicial(inst, Q[q], 1)[0])
+                                            
+                    lenNovaGeracao=len(novaGeracao)
+                    while (lenNovaGeracao>0):
+                        if lenNovaGeracao>0:
+                            solucoes.append(novaGeracao.pop(rd.randint(0,len(novaGeracao)-1)))
+                        else:
+                            solucoes.append(novaGeracao.pop(0))
+                        lenNovaGeracao-=1
 
-                    n1,n2 = crossover(s1,s2,inst, Q[q], estrategia_crossover, LStype)
-                    solucoes.append(n1)
-                    solucoes.append(n2)
+                    while(len(solucoes)<quantidadeSolucoesIniciais):
+                        solucoes.append(geraPopulacaoInicial(inst, Q[q], 1)[0])
 
-                    if melhorSolucao.mstTotal>n1.mstTotal:
-                        melhorSolucao=n1
-                    if melhorSolucao.mstTotal>n2.mstTotal:
-                        melhorSolucao=n2
-
-                    if i%20 == 0:
-                        print("Geração "+str(i)+" melhor até geracao: "+ str(melhorSolucao.mstTotal) +" - "+str(datetime.datetime.now()-inicio))
-
+                    #if i%5 == 0:
+                    #    print("Geração "+str(i)+" melhor até geracao: "+ str(melhorSolucao.mstTotal) +" - "+str(datetime.datetime.now()-inicio))
+                print("Geração "+str(i)+" melhor até geracao: "+ str(melhorSolucao.mstTotal) +" - "+str(datetime.datetime.now()-inicio)+" em "+str(len(solucoes))+" solucoes")
                 if LStype==2:
                     melhorSolucao,i,j = LS2(melhorSolucao,inst,Q[q])
                 else:
@@ -774,36 +809,15 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                     results_write=[instancia+";"+str(inst.tamanho)+";"+str(instancias[instancia].id)+";"+str(Q[q])+";"+melhorInicial+";"+str(melhorSolucao.mstTotal)+";"+str(seed)+";"+str(estrategia_crossover)+";"+str(LStype)+";"+str(datetime.datetime.now()-inicio)+"\n"]
                     results_file.writelines(results_write)
 
-#inicio = datetime.datetime.now()
-#executa(100,1000,2)
-#print(datetime.datetime.now() - inicio)
-     
-#inicio = datetime.datetime.now()
-#executa(100,1000,1)
-#print(datetime.datetime.now() - inicio)
-#inicio = datetime.datetime.now()
-#executa(200,1000,1)
-#print(datetime.datetime.now() - inicio)
-#inicio = datetime.datetime.now()
-#executa(300,1000,1)
-#print(datetime.datetime.now() - inicio)
-#inicio = datetime.datetime.now()
-#executa(500,1000,1)
-#print(datetime.datetime.now() - inicio)
 inicio = datetime.datetime.now()
-#executa(250,250,1,2,[1,2,3,4,5])
-#executa(250,250,1,1,[1,2,3,4,5])
-#executa(250,250,2,1,[1,2,3,4,5])
-#executa(250,250,2,2,[3,4])
-#executa(250,250,2,2,[1,2])
-executa(250,250,2,2,[5])
-
-#executa(250,250,1,2,[3,4,5])
-#executa(250,250,1,1,[3,4,5])
-#executa(250,250,2,1,[1,2,3,4,5])
-#executa(250,250,2,2,[1,2,3,4,5])
+#executa(30,100,2,2,[1,2,3,4,5])
+executa(30,100,2,2,[1])
+#executa(30,100,2,2,[2])
+#executa(30,100,2,2,[3])
+#executa(30,100,2,2,[4])
+#executa(30,100,2,2,[5])
 print(datetime.datetime.now() - inicio)
-#instancias = l.load("tcte","data\\capmst1.txt").instances
+
 
 
 
