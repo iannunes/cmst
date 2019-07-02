@@ -716,7 +716,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
     datahora_arquivos = datetime.datetime.now()
     datahora_arquivos = str(datahora_arquivos.year)+str(datahora_arquivos.month)+str(datahora_arquivos.day)+str(datahora_arquivos.hour)+str(datahora_arquivos.minute)+str(datahora_arquivos.second)
 
-    results_path = "results\\"+str(datahora_arquivos)+"_renovados3.csv"
+    results_path = "results\\"+str(datahora_arquivos)+".csv"
     path_instance = Path(results_path)
     if path_instance.is_file()==False:
         with open(results_path, "a") as results_file:
@@ -810,7 +810,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                     results_file.writelines(results_write)
 
 inicio = datetime.datetime.now()
-executa(30,100,2,2,[1,2,3,4,5],600)
+executa(30,100,2,2,[1,2,3,4,5],50)
 print(datetime.datetime.now() - inicio)
 
 
