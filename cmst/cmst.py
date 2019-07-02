@@ -716,7 +716,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
     datahora_arquivos = datetime.datetime.now()
     datahora_arquivos = str(datahora_arquivos.year)+str(datahora_arquivos.month)+str(datahora_arquivos.day)+str(datahora_arquivos.hour)+str(datahora_arquivos.minute)+str(datahora_arquivos.second)
 
-    results_path = "results\\"+str(datahora_arquivos)+".csv"
+    results_path = "results\\"+str(datahora_arquivos)+"_renovados3.csv"
     path_instance = Path(results_path)
     if path_instance.is_file()==False:
         with open(results_path, "a") as results_file:
@@ -754,12 +754,8 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                 solucoes = solucoesLS
                 
                 for i in range(0,quantidadeGeracoes):
-                    if (datetime.datetime.now()-inicio).seconds>tempolimite:
-                        break
                     novaGeracao=[]
                     for j in range(0,len(solucoes)-1,2):
-                        if (datetime.datetime.now()-inicio).seconds>tempolimite:
-                            break
                         s1 = solucoes[j]
                         s2 = solucoes[j+1]
                         n1,n2, qtd = crossover(s1,s2,inst, Q[q], estrategia_crossover, LStype)
@@ -774,7 +770,11 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                         if melhorSolucao.mstTotal>n2.mstTotal:
                             melhorSolucao=n2
                             print("Geração "+str(i)+" melhor até geracao: "+ str(melhorSolucao.mstTotal) +" - "+str(datetime.datetime.now()-inicio)+" em "+str(len(solucoes))+" solucoes")
-                            
+                        if (datetime.datetime.now()-inicio).seconds>tempolimite:
+                            break
+                    
+                    if (datetime.datetime.now()-inicio).seconds>tempolimite:
+                        break
                     novaGeracao.sort(key=lambda x: x.mstTotal, reverse=True)
                     
                     novaGeracao.pop(0)
@@ -810,7 +810,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                     results_file.writelines(results_write)
 
 inicio = datetime.datetime.now()
-executa(30,100,2,2,[1,2,3,4,5])
+executa(30,100,2,2,[1,2,3,4,5],600)
 print(datetime.datetime.now() - inicio)
 
 
