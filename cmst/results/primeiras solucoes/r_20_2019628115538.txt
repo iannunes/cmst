@@ -1,4 +1,0 @@
-tc80_1 tamanho instancia: 81 - id 1 - 20
-melhor solucao populacao incial: 856
-melhor solucao GA: 846
-FIM - 0:28:10.116142

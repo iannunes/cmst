@@ -708,7 +708,7 @@ def LS2(solucao, instancia, Q):
     else:
         return solucao, iEscolhido, jEscolhido
 from pathlib import Path
-def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia_crossover=2, seeds=[1,2,3,4,5]):
+def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia_crossover=2, seeds=[1,2,3,4,5], tempolimite = 1200):
     Q=[200,400,800]
     Q=[5,10,20]
 
@@ -722,13 +722,13 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
         with open(results_path, "a") as results_file:
             results_write=["instancia;tamanho;id;restricao;melhor incial;melhor GA;seed;crossover;LS;tempo\n"]
             results_file.writelines(results_write)
-    tempolimite = 600
+    
     for seed in seeds:
         rd.seed(seed)
         for instancia in instancias:
             #if instancia != "tc80_2":
             #    continue
-            if instancia.find("te80")<0:
+            if instancia.find("80")<0:
                 continue
             inst = instancias[instancia]
             for q in range(0,len(Q)):      
@@ -810,12 +810,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                     results_file.writelines(results_write)
 
 inicio = datetime.datetime.now()
-#executa(30,100,2,2,[1,2,3,4,5])
-executa(30,100,2,2,[1])
-#executa(30,100,2,2,[2])
-#executa(30,100,2,2,[3])
-#executa(30,100,2,2,[4])
-#executa(30,100,2,2,[5])
+executa(30,100,2,2,[1,2,3,4,5])
 print(datetime.datetime.now() - inicio)
 
 
