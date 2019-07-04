@@ -1,6 +1,7 @@
 import load as l
 import random as rd
 import datetime
+from pathlib import Path
 
 debug=False
 
@@ -240,8 +241,8 @@ def prim(g,instancia):
 def calculaTotalMST(clusters, instancia):
     mstTotal=0
     for i,c in clusters.items():
-        if c.mstCusto<=0:
-            c.mstCusto = prim(c.nodes,instancia)
+        #if c.mstCusto<=0:
+        c.mstCusto = prim(c.nodes,instancia)
         mstTotal+=c.mstCusto
     return mstTotal
 
@@ -589,69 +590,91 @@ def LS(solucao, instancia, Q):
     jEscolhido = -1
     novoClusterJ = -1
     novoClusterI = -1
-    melhorMST = solucao.mstTotal
     linhas = instancia.pesos.shape[0]
-    melhorClusters = {}
+    melhorClusters = solucao
+    swapsTestados = {}
+
+    custosOrdenados = instancia.getCustosOrdenados()
+    quantidadeItens = int(instancia.tamanho*0.3)
 
     for i in range(0,linhas-1):
         clusterI = solucao.vertices[i]
-        for j in range(i+1,linhas):
-            if (i==j):
+        contador=0
+        if i not in swapsTestados:
+            swapsTestados[i] = []
+            maisProximo = -1
+            for k in range(0,len(custosOrdenados[i])-1):
+                if (clusterI == solucao.vertices[k]):
+                    maisProximo = k
+        for kv in custosOrdenados[maisProximo]:
+            j = kv.key
+            if (contador >= quantidadeItens):
+                break
+            #o proprio ou no central
+            if (i==j) or (j==instancia.tamanho-1):
                 continue
             clusterJ = solucao.vertices[j]
+            if (clusterJ == clusterI):
+                continue
             # nao troco se a restricao de peso por cluster nao for respeitada
-            if ((solucao.lista[clusterI].peso-instancia.pesos[i]+instancia.pesos[j])>Q):
+            if ((solucao.lista[clusterI].peso-instancia.pesos[i]+instancia.pesos[j])>Q) or ((solucao.lista[clusterJ].peso-instancia.pesos[j]+instancia.pesos[i])>Q):
                 continue
-            if ((solucao.lista[clusterJ].peso-instancia.pesos[j]+instancia.pesos[i])>Q):
+            if j not in swapsTestados:
+                swapsTestados[j] = []
+            elif j in swapsTestados[i]:
                 continue
+            swapsTestados[i].append(j)
+            swapsTestados[j].append(i)
 
-            clusters = {}
+            clusters = clustersObject()
             for c,v in solucao.lista.items():
-                clusters[c]=cluster() 
-                clusters[c].mstCusto = 0
-                clusters[c].peso = v.peso
-                clusters[c].nodes = v.nodes.copy()
+                clusters.lista[c]=cluster() 
+                clusters.lista[c].mstCusto = solucao.lista[c].mstCusto
+                clusters.lista[c].peso = v.peso
+                clusters.lista[c].nodes = v.nodes.copy()
 
-            clusters[clusterJ].nodes.remove(j)
-            clusters[clusterI].nodes.remove(i)
-            clusters[clusterJ].nodes.append(i)
-            clusters[clusterI].nodes.append(j)  
+            clusters.lista[clusterJ].nodes.remove(j)
+            clusters.lista[clusterI].nodes.remove(i)
+
+            clusters.lista[clusterJ].nodes.append(i)
+            clusters.lista[clusterI].nodes.append(j)  
             
-            clusters[clusterJ].peso = (solucao.lista[clusterJ].peso-instancia.pesos[j]+instancia.pesos[i])
-            clusters[clusterI].peso = (solucao.lista[clusterI].peso-instancia.pesos[i]+instancia.pesos[j])
+            clusters.lista[clusterJ].peso = (solucao.lista[clusterJ].peso-instancia.pesos[j]+instancia.pesos[i])
+            clusters.lista[clusterI].peso = (solucao.lista[clusterI].peso-instancia.pesos[i]+instancia.pesos[j])
 
-            mst = calculaTotalMST(clusters,instancia)
+            clusters.lista[clusterJ].mstCusto = prim(clusters.lista[clusterJ].nodes, instancia)
+            clusters.lista[clusterI].mstCusto = prim(clusters.lista[clusterI].nodes, instancia)
 
-            if mst<melhorMST:
+            #clusters.mstTotal = solucao.mstTotal + clusters.lista[clusterJ].mstCusto + clusters.lista[clusterI].mstCusto - solucao.lista[clusterJ].mstCusto - solucao.lista[clusterI].mstCusto
+            clusters.mstTotal = 0
+            for k,c in clusters.lista.items():
+                clusters.mstTotal += c.mstCusto
+
+            contador+=1
+            if clusters.mstTotal < melhorClusters.mstTotal:
                 iEscolhido = i
                 jEscolhido = j
                 novoClusterJ = clusterI
                 novoClusterI = clusterJ
                 melhorClusters = clusters
-                melhorMST = mst
     
-    retorno = clustersObject()
-
-    if melhorMST <= solucao.mstTotal:
-        retorno.lista = melhorClusters
-        retorno.mstTotal = melhorMST
-        retorno.vertices = solucao.vertices.copy()
-        retorno.vertices[iEscolhido] = novoClusterI
-        retorno.vertices[jEscolhido] = novoClusterJ
-        retorno.LS=True
+    if melhorClusters.mstTotal <= solucao.mstTotal:
+        melhorClusters.vertices = solucao.vertices.copy()
+        melhorClusters.vertices[iEscolhido] = novoClusterI
+        melhorClusters.vertices[jEscolhido] = novoClusterJ
+        melhorClusters.LS=True
+        if debug:
+            print ("solucao original msttotal:" + str(solucao.mstTotal) + " - nova: " + str( melhorClusters.mstTotal ))
+        return melhorClusters, iEscolhido, jEscolhido
     else:
-        retorno = solucao, iEscolhido, jEscolhido
-    if debug:
-        print ("solucao original msttotal:" + str(solucao.mstTotal) + " - nova: " + str(melhorMST))
-    return retorno, iEscolhido, jEscolhido
+        return solucao, iEscolhido, jEscolhido
 
 def LS2(solucao, instancia, Q):
     iEscolhido = -1
     jEscolhido = -1
     novoClusterJ = -1
     novoClusterI = -1
-    melhorMST = solucao.mstTotal+1
-    linhas = instancia.pesos.shape[0]
+    linhas = instancia.tamanho-1
     melhorClusters = solucao
 
     for i in range(0,linhas-1):
@@ -660,6 +683,8 @@ def LS2(solucao, instancia, Q):
             if (i==j):
                 continue
             clusterJ = solucao.vertices[j]
+            if (clusterJ==clusterI):
+                continue
             # nao troco se a restricao de peso por cluster nao for respeitada
             if ((solucao.lista[clusterI].peso-instancia.pesos[i]+instancia.pesos[j])>Q):
                 continue
@@ -683,19 +708,21 @@ def LS2(solucao, instancia, Q):
             clusters.lista[clusterJ].peso = (solucao.lista[clusterJ].peso-instancia.pesos[j]+instancia.pesos[i])
             clusters.lista[clusterI].peso = (solucao.lista[clusterI].peso-instancia.pesos[i]+instancia.pesos[j])
 
-            mst = calculaTotalMST(clusters.lista,instancia)
-            clusters.mstTotal = solucao.mstTotal + clusters.lista[clusterJ].mstCusto + clusters.lista[clusterI].mstCusto - solucao.lista[clusterJ].mstCusto - solucao.lista[clusterI].mstCusto
+            #mst = calculaTotalMST(clusters.lista,instancia)
+            clusters.mstTotal = 0
+            for k,c in clusters.lista.items():
+                clusters.mstTotal += c.mstCusto
+            #clusters.mstTotal = solucao.mstTotal + clusters.lista[clusterJ].mstCusto + clusters.lista[clusterI].mstCusto - solucao.lista[clusterJ].mstCusto - solucao.lista[clusterI].mstCusto
 
-            if (mst!= clusters.mstTotal):
-                alerta=1
+            #if (mst!= clusters.mstTotal):
+                #alerta=1
 
-            if clusters.mstTotal<melhorMST:
+            if clusters.mstTotal<melhorClusters.mstTotal:
                 iEscolhido = i
                 jEscolhido = j
                 novoClusterJ = clusterI
                 novoClusterI = clusterJ
                 melhorClusters = clusters
-                melhorMST = clusters.mstTotal
     
     if melhorClusters.mstTotal < solucao.mstTotal:
         melhorClusters.vertices = solucao.vertices.copy()
@@ -707,8 +734,8 @@ def LS2(solucao, instancia, Q):
         return melhorClusters, iEscolhido, jEscolhido
     else:
         return solucao, iEscolhido, jEscolhido
-from pathlib import Path
-def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia_crossover=2, seeds=[1,2,3,4,5], tempolimite = 1200):
+
+def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia_crossover=2, seeds=[1,2,3,4,5], tempolimite = 1200, quantidadeRenovacao=2):
     Q=[200,400,800]
     Q=[5,10,20]
 
@@ -720,7 +747,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
     path_instance = Path(results_path)
     if path_instance.is_file()==False:
         with open(results_path, "a") as results_file:
-            results_write=["instancia;tamanho;id;restricao;melhor incial;melhor GA;seed;crossover;LS;tempo\n"]
+            results_write=["instancia;tamanho;id;restricao;melhor incial;melhor GA;seed;crossover;LS;tempo;renovacao;populacao\n"]
             results_file.writelines(results_write)
     
     for seed in seeds:
@@ -728,11 +755,11 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
         for instancia in instancias:
             #if instancia != "tc80_2":
             #    continue
-            if instancia.find("80")<0:
+            if instancia.find("tc80")<0:
                 continue
             inst = instancias[instancia]
             for q in range(0,len(Q)):      
-                print (instancia+" tamanho instancia: "+str(inst.tamanho)+" - id "+str(instancias[instancia].id)+" - "+str(Q[q]))
+                print (instancia+" tamanho instancia: "+str(inst.tamanho)+" - id "+str(instancias[instancia].id)+" - restricao "+str(Q[q])+" - tempo "+str(tempolimite)+" - LS "+str(LStype)+" - crossover "+str(estrategia_crossover))
 
                 inicio = datetime.datetime.now()
                 solucoes = geraPopulacaoInicial(inst, Q[q], quantidadeSolucoesIniciais)
@@ -742,16 +769,23 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                         melhorSolucao.mstTotal = s.mstTotal
                 
                 melhorInicial = str(melhorSolucao.mstTotal)
-
+                print("Melhor inicial: "+ str(melhorInicial))
                 solucoesLS = []
+                inicio=datetime.datetime.now()
                 for s in solucoes:
                     if LStype==2:
                         ns,i,j = LS2(s,inst,Q[q])
                     else:
                         ns,i,j = LS(s,inst,Q[q])
                     solucoesLS.append(ns)
+                print("LS inicial: "+str(datetime.datetime.now()-inicio))
 
                 solucoes = solucoesLS
+
+                for s in solucoes:
+                    if s.mstTotal<melhorSolucao.mstTotal:
+                        melhorSolucao.mstTotal = s.mstTotal
+                print("Melhor apos LS inicial: "+ str(melhorSolucao.mstTotal))
                 
                 for i in range(0,quantidadeGeracoes):
                     novaGeracao=[]
@@ -776,12 +810,15 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                     if (datetime.datetime.now()-inicio).seconds>tempolimite:
                         break
                     novaGeracao.sort(key=lambda x: x.mstTotal, reverse=True)
+
+                    for k in range(0,quantidadeRenovacao):
+                        #novaGeracao.pop(int((k*quantidadeSolucoesIniciais-1)/quantidadeRenovacao))
+                        novaGeracao.pop(0)
                     
-                    novaGeracao.pop(0)
-                    novaGeracao.pop(0)
                     
                     solucoes = []
-                    solucoes.append(geraPopulacaoInicial(inst, Q[q], 1)[0])
+                    if (quantidadeRenovacao>0):
+                        solucoes.append(geraPopulacaoInicial(inst, Q[q], 1)[0])
                                             
                     lenNovaGeracao=len(novaGeracao)
                     while (lenNovaGeracao>0):
@@ -789,6 +826,8 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                             solucoes.append(novaGeracao.pop(rd.randint(0,len(novaGeracao)-1)))
                         else:
                             solucoes.append(novaGeracao.pop(0))
+                        if (lenNovaGeracao%(quantidadeSolucoesIniciais)/quantidadeRenovacao)==0:
+                            solucoes.append(geraPopulacaoInicial(inst, Q[q], 1)[0])
                         lenNovaGeracao-=1
 
                     while(len(solucoes)<quantidadeSolucoesIniciais):
@@ -797,6 +836,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                     #if i%5 == 0:
                     #    print("Geração "+str(i)+" melhor até geracao: "+ str(melhorSolucao.mstTotal) +" - "+str(datetime.datetime.now()-inicio))
                 print("Geração "+str(i)+" melhor até geracao: "+ str(melhorSolucao.mstTotal) +" - "+str(datetime.datetime.now()-inicio)+" em "+str(len(solucoes))+" solucoes")
+                #print(str(melhorSolucao.vertices))
                 if LStype==2:
                     melhorSolucao,i,j = LS2(melhorSolucao,inst,Q[q])
                 else:
@@ -804,16 +844,21 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
 
                 solucoes.append(melhorSolucao)
                 print("FIM - "+str(datetime.datetime.now()-inicio))
-
+                #print(str(melhorSolucao.vertices))
                 with open(results_path, "a") as results_file:
-                    results_write=[instancia+";"+str(inst.tamanho)+";"+str(instancias[instancia].id)+";"+str(Q[q])+";"+melhorInicial+";"+str(melhorSolucao.mstTotal)+";"+str(seed)+";"+str(estrategia_crossover)+";"+str(LStype)+";"+str(datetime.datetime.now()-inicio)+"\n"]
+                    results_write=[instancia+";"+str(inst.tamanho)+";"+str(instancias[instancia].id)+";"+str(Q[q])+";"+melhorInicial+";"+str(melhorSolucao.mstTotal)+";"+str(seed)+";"+str(estrategia_crossover)+";"+str(LStype)+";"+str((datetime.datetime.now()-inicio).seconds)+";"+str(quantidadeRenovacao)+";"+str(quantidadeSolucoesIniciais)+"\n"]
                     results_file.writelines(results_write)
 
 inicio = datetime.datetime.now()
-executa(30,100,2,2,[1,2,3,4,5],50)
+population = 20
+generations = 400
+LStype = 1
+estrategiacrossover = 2
+quantidadeRenovacao = 2
+tempolimite = 1200
+#executa(population,generations,LStype,estrategiacrossover,[1],tempolimite,quantidadeRenovacao)
+#executa(population,generations,LStype,estrategiacrossover,[2],tempolimite,quantidadeRenovacao)
+#executa(population,generations,LStype,estrategiacrossover,[3],tempolimite,quantidadeRenovacao)
+#executa(population,generations,LStype,estrategiacrossover,[4],tempolimite,quantidadeRenovacao)
+executa(population,generations,LStype,estrategiacrossover,[5],tempolimite,quantidadeRenovacao)
 print(datetime.datetime.now() - inicio)
-
-
-
-
-

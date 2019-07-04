@@ -1,5 +1,7 @@
 import numpy as np
 from enum import Enum
+import collections
+import sys
 
 class fase(Enum):
     begining=1
@@ -14,6 +16,7 @@ class instance:
         self.pesos = p
         self.custos = np.zeros([t,t],dtype=int)
         self.tipo = tipo
+        self.custosOrdenados = {}
 
     def pesoMaximo(self):
         return max(self.pesos)
@@ -21,6 +24,23 @@ class instance:
     def custoMaximo(self):
         return np.amax(self.custos)
 
+    def getCustosOrdenados(self):
+        if len(self.custosOrdenados)==0:
+            for i in range(0, self.tamanho):
+                self.custosOrdenados[i] = []
+                for j in range(0, self.tamanho):
+                    if i==j:
+                        self.custosOrdenados[i].append(keyValue(j,sys.maxsize))
+                    else:
+                        self.custosOrdenados[i].append(keyValue(j,self.custos[i,j]))
+            for i in range(0, self.tamanho):
+                self.custosOrdenados[i].sort(key=lambda x: x.value, reverse=False)
+
+        return self.custosOrdenados
+class keyValue:
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value 
 class load:
     def __init__(self, type, path):
         if type=="cm":
