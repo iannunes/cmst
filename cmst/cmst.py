@@ -755,7 +755,7 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
         for instancia in instancias:
             #if instancia != "tc80_2":
             #    continue
-            if instancia.find("tc80")<0:
+            if instancia.find("80")<0:
                 continue
             inst = instancias[instancia]
             for q in range(0,len(Q)):      
@@ -852,13 +852,9 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
 inicio = datetime.datetime.now()
 population = 20
 generations = 400
-LStype = 1
-estrategiacrossover = 2
-quantidadeRenovacao = 2
+LStype = 2
+estrategiacrossover = 1
+quantidadeRenovacao = int(population*0.3)
 tempolimite = 1200
-#executa(population,generations,LStype,estrategiacrossover,[1],tempolimite,quantidadeRenovacao)
-#executa(population,generations,LStype,estrategiacrossover,[2],tempolimite,quantidadeRenovacao)
-#executa(population,generations,LStype,estrategiacrossover,[3],tempolimite,quantidadeRenovacao)
-#executa(population,generations,LStype,estrategiacrossover,[4],tempolimite,quantidadeRenovacao)
-executa(population,generations,LStype,estrategiacrossover,[5],tempolimite,quantidadeRenovacao)
+executa(population,generations,LStype,estrategiacrossover,[1,2,3,4,5],tempolimite,quantidadeRenovacao)
 print(datetime.datetime.now() - inicio)
