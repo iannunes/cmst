@@ -2,6 +2,7 @@ import load as l
 import random as rd
 import datetime
 from pathlib import Path
+import sys
 
 debug=False
 
@@ -241,8 +242,8 @@ def prim(g,instancia):
 def calculaTotalMST(clusters, instancia):
     mstTotal=0
     for i,c in clusters.items():
-        #if c.mstCusto<=0:
-        c.mstCusto = prim(c.nodes,instancia)
+        if c.mstCusto<=0:
+            c.mstCusto = prim(c.nodes,instancia)
         mstTotal+=c.mstCusto
     return mstTotal
 
@@ -408,18 +409,83 @@ def geraFilhos(solucao1,solucao2,instancia, restricao, estrategia=1):
         nClustersNova1 = 0
         nClustersNova2 = 0
         for i,c in solucao2.lista.items():    
-            if i>=corte1 and i<corte2:
+            if i>corte1 and i<=corte2:
                 nClustersNova1+=1
                 nova1.lista[nClustersNova2] = cluster()
                 nova1.lista[nClustersNova2].nodes = c.nodes.copy()
                 nova1.lista[nClustersNova2].mstCusto = c.mstCusto
                 nova1.lista[nClustersNova2].peso = c.peso
+
             else:
                 nClustersNova2+=1
                 nova2.lista[nClustersNova1] = cluster()
                 nova2.lista[nClustersNova1].nodes = c.nodes.copy()
                 nova2.lista[nClustersNova1].mstCusto = c.mstCusto
                 nova2.lista[nClustersNova1].peso = c.peso
+        for i,c in nova1.lista.items():
+            if ((c.peso>0) and (rd.randint(0,5)==19)):
+                    c.nodes.pop(rd.randint(0,len(c.nodes)-1))
+                    c.peso = 0
+
+        for i,c in nova2.lista.items():
+            if ((c.peso>0) and (rd.randint(0,5)==19)):
+                    c.nodes.pop(rd.randint(0,len(c.nodes)-1))
+                    c.peso = 0
+    elif estrategia==3:
+        clusterSolucao1 = rd.randint(1,len(solucao1.lista))
+        clusterSolucao2 = rd.randint(1,len(solucao2.lista))
+        novoCluster1 = cluster()
+        novoCluster2 = cluster()
+        for k in range(0, len(solucao1.lista[clusterSolucao1].nodes)):
+            if (rd.choice([0,1])==0):
+                if (solucao1.lista[clusterSolucao1].nodes[k] not in novoCluster1.nodes):
+                    novoCluster1.nodes.append(solucao1.lista[clusterSolucao1].nodes[k])
+            if (rd.choice([0,1])==0):
+                if (solucao1.lista[clusterSolucao1].nodes[k] not in novoCluster2.nodes):
+                    novoCluster2.nodes.append(solucao1.lista[clusterSolucao1].nodes[k])
+        for k in range(0, len(solucao2.lista[clusterSolucao2].nodes)):
+            if (rd.choice([0,1])==0):
+                if (solucao2.lista[clusterSolucao2].nodes[k] not in novoCluster2.nodes):
+                    novoCluster2.nodes.append(solucao2.lista[clusterSolucao2].nodes[k])
+            if (rd.choice([0,1])==0):
+                if (solucao2.lista[clusterSolucao2].nodes[k] not in novoCluster1.nodes):
+                    novoCluster1.nodes.append(solucao2.lista[clusterSolucao2].nodes[k])
+
+        for i,c in solucao1.lista.items():    
+            if i!=clusterSolucao1:
+                nova1.lista[i] = cluster()
+                nova1.lista[i].nodes = c.nodes.copy()
+                nova1.lista[i].mstCusto = c.mstCusto
+                nova1.lista[i].peso = c.peso
+                for k in range(0,len(novoCluster1.nodes)):
+                    if (novoCluster1.nodes[k] in nova1.lista[i].nodes):
+                        nova1.lista[i].peso = 0
+                        nova1.lista[i].nodes.remove(novoCluster1.nodes[k])
+                if ((nova1.lista[i].peso>0) and (rd.randint(0,9)==5)):
+                    nova1.lista[i].nodes.pop(rd.randint(0,len(nova1.lista[i].nodes)-1))
+                    nova1.lista[i].peso = 0
+            else:
+                nova1.lista[i] = novoCluster1
+                nova1.lista[i].peso=0
+                nova1.lista[i].mstCusto=0
+        for i,c in solucao2.lista.items():    
+            if i!=clusterSolucao2:
+                nova2.lista[i] = cluster()
+                nova2.lista[i].nodes = c.nodes.copy()
+                nova2.lista[i].mstCusto = c.mstCusto
+                nova2.lista[i].peso = c.peso
+                for k in range(0,len(novoCluster2.nodes)):
+                    if (novoCluster2.nodes[k] in nova2.lista[i].nodes):
+                        nova2.lista[i].peso = 0
+                        nova2.lista[i].nodes.remove(novoCluster2.nodes[k])
+                if ((nova2.lista[i].peso>0) and (rd.randint(0,9)==5)):
+                    nova2.lista[i].nodes.pop(rd.randint(0,len(nova2.lista[i].nodes)-1))
+                    nova2.lista[i].peso = 0
+
+            else:
+                nova2.lista[i] = novoCluster2
+                nova2.lista[i].peso=0
+                nova2.lista[i].mstCusto=0
 
     nova1 = removeInconsistencias(nova1, instancia, restricao)
     nova2 = removeInconsistencias(nova2, instancia, restricao)
@@ -429,6 +495,7 @@ def completaSolucao(instancia, restricao, solucao, vertices, randomOnlyFirst=Tru
     nClusters = len(solucao.lista)
     retorno = solucao
     nVerticesInseridos = len(solucao.vertices)
+    #print(str(nVerticesInseridos)+" - ")
 
     linhas = instancia.pesos.shape[0]
 
@@ -494,6 +561,7 @@ def completaSolucao(instancia, restricao, solucao, vertices, randomOnlyFirst=Tru
 
     for i,c in clusters.items():
         retorno.lista[i]=c
+
     retorno.mstTotal = calculaTotalMST(retorno.lista, instancia)
     retorno.randomAll = randomAll
     retorno.randomAllFirst = randomAllFirst
@@ -509,14 +577,37 @@ def removeInconsistencias(s,instancia, restricao):
     vertices={}
     for i in range(0,instancia.tamanho-1):
         vertices[i] = False
+
+    clustersRecalcular = []
+    # retiro itens do cluster caso a restricão nao tenha sido respeitada
+    # precisa recalcular a mst ao final
+    for i,c in s.lista.items():
+        if c.peso==0:
+            peso = sys.maxsize
+            c.mstCusto=0
+            clustersRecalcular.append(i)
+            while peso>restricao:
+                peso = 0
+                quantidadeVertices = len(c.nodes)
+                for j in range(0,quantidadeVertices):
+                    peso += instancia.pesos[c.nodes[j]]
+                if peso>restricao:
+                    if quantidadeVertices>1:
+                        c.nodes.pop(rd.randint(0,quantidadeVertices-1))
+                    else:
+                        c.nodes.pop(0)
+            c.peso = peso
+    #print("recalcular: "+str(clustersRecalcular))
     removerClusters = []
     for i,c in s.lista.items():
         for v in c.nodes:
-            if (i in s.vertices):
-                if (i not in removerClusters) and (s.vertices[i] not in removerClusters):
+            if (v in s.vertices):
+                if (i not in removerClusters) and (s.vertices[v] not in removerClusters) and (i!=s.vertices[v]):
                     removerClusters.append(i)
+                    #print("remover: "+str(i))
                     break
             s.vertices[v]=i
+    #print ("remover: "+str(removerClusters))
     # caso haja repeticao de algum elemento em mais de um cluster, um deles é removido
     for remover in removerClusters:
         s.lista.pop(remover)
@@ -535,12 +626,15 @@ def removeInconsistencias(s,instancia, restricao):
             sNova.vertices[v]=nclusters
             vertices[v]=True
 
-    for i in range(0,instancia.tamanho-1):
-        if (vertices[i]==False):
-            pesoVertice = instancia.pesos[i]
-            clusterMaisProximo = -1
-            clusterMaisProximoDistancia=2000000000
-            for j,c in sNova.lista.items():
+    for j,c in sNova.lista.items():
+        if c.peso>=restricao:
+            continue
+
+        for i in range(0,instancia.tamanho-1):
+            if (vertices[i]==False):
+                pesoVertice = instancia.pesos[i]
+                clusterMaisProximo = -1
+                clusterMaisProximoDistancia = sys.maxsize
                 if c.peso+pesoVertice>restricao:
                     continue
                 for k in c.nodes:
@@ -548,12 +642,12 @@ def removeInconsistencias(s,instancia, restricao):
                     if custoIK<clusterMaisProximoDistancia:
                         clusterMaisProximo=j
                         clusterMaisProximoDistancia=custoIK
-            if (clusterMaisProximo>0):
-                sNova.lista[clusterMaisProximo].nodes.append(i)
-                sNova.lista[clusterMaisProximo].peso += pesoVertice
-                sNova.lista[clusterMaisProximo].mstCusto = prim(sNova.lista[clusterMaisProximo].nodes,instancia)
-                sNova.vertices[i]=clusterMaisProximo
-                vertices[i]=True
+                if (clusterMaisProximo>0):
+                    sNova.lista[clusterMaisProximo].nodes.append(i)
+                    sNova.lista[clusterMaisProximo].peso += pesoVertice
+                    sNova.lista[clusterMaisProximo].mstCusto = prim(sNova.lista[clusterMaisProximo].nodes,instancia)
+                    sNova.vertices[i]=clusterMaisProximo
+                    vertices[i]=True
 
     sNova = completaSolucao(instancia, restricao, sNova, vertices, False, False, False)
     return sNova
@@ -850,11 +944,11 @@ def executa(quantidadeSolucoesIniciais, quantidadeGeracoes, LStype=2, estrategia
                     results_file.writelines(results_write)
 
 inicio = datetime.datetime.now()
-population = 20
+population = 40
 generations = 400
-LStype = 2
-estrategiacrossover = 1
-quantidadeRenovacao = int(population*0.3)
+LStype = 1
+estrategiacrossover = 3
+quantidadeRenovacao = int(population*0.1)
 tempolimite = 1200
 executa(population,generations,LStype,estrategiacrossover,[1,2,3,4,5],tempolimite,quantidadeRenovacao)
 print(datetime.datetime.now() - inicio)

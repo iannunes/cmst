@@ -17,12 +17,17 @@ class instance:
         self.custos = np.zeros([t,t],dtype=int)
         self.tipo = tipo
         self.custosOrdenados = {}
-
+        self.__maxCusto = None
+        self.__maxPeso = None
     def pesoMaximo(self):
-        return max(self.pesos)
+        if (self.__maxPeso == None):
+            self.__maxPeso = max(self.pesos)
+        return self.__maxPeso
 
     def custoMaximo(self):
-        return np.amax(self.custos)
+        if (self.__maxCusto == None):
+            self.__maxCusto = np.amax(self.custos)
+        return self.__maxCusto
 
     def getCustosOrdenados(self):
         if len(self.custosOrdenados)==0:
